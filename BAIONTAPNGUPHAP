@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Grammar in Use — Luyện tập (Giao diện B)</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;max-width:900px;margin:20px auto;padding:20px}
+  h1{font-size:1.4rem;margin-bottom:0.2rem}
+  .section-title{margin-top:18px;font-weight:700}
+  #progress{height:18px;background:#eee;border-radius:10px;overflow:hidden;margin:10px 0}
+  #bar{height:100%;width:0;background:linear-gradient(90deg,#4caf50,#2e8b57)}
+  .card{border:1px solid #ddd;padding:16px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.03)}
+  .answers{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  button.opt{padding:10px;border-radius:8px;border:1px solid #ccc;background:white;text-align:left;cursor:pointer}
+  button.opt.correct{border-color:green;background:#eaffea}
+  button.opt.wrong{border-color:#c33;background:#ffecec}
+  .controls{display:flex;gap:8px;margin-top:12px}
+  .small{font-size:0.9rem;color:#555}
+  #stats{margin-top:12px}
+  .hidden{display:none}
+  footer{margin-top:20px;font-size:0.9rem;color:#666}
+</style>
+</head>
+<body>
+<h1>Grammar in Use — Bài luyện trắc nghiệm (Giao diện B)</h1>
+<p class="small">Luật chơi: Mỗi phần giữ nguyên; câu hỏi trong phần sẽ được xáo trộn. Đáp án cũng xáo trộn. Chọn 1 đáp án → hiện ngay đúng/sai và phát âm thanh. Sai được chọn lại hoặc bấm "Bỏ qua".</p>
+
+<label>Phần: <span id="sectionName"></span></label>
+<div id="progress"><div id="bar"></div></div>
+<div class="card">
+  <div id="questionArea">
+    <div id="qText" style="font-weight:600"></div>
+    <div class="answers" id="answers"></div>
+    <div class="controls">
+      <button id="skipBtn">Bỏ qua</button>
+      <button id="nextBtn" class="hidden">Tiếp tục</button>
+      <button id="retrySection" class="hidden">Làm lại phần</button>
+    </div>
+    <div id="stats" class="small"></div>
+  </div>
+</div>
+
+<footer>File tạo tự động — mở file này offline để luyện. (Âm thanh: bật)</footer>
+
+<!-- sounds -->
+<audio id="sound-correct">
+  <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav">
+</audio>
+<audio id="sound-wrong">
+  <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav">
+</audio>
+
+<script>
+/* QUESTIONS DATA: sections with questions and options.
+   Each question: {q: "text", opts: ["A ...","B ...","C ...","D ..."], answer: index}
+*/
+const sections = [
+  {
+    id: "I. Nouns",
+    questions: [
+      {q:"How many __________ do you have?", opts:["A. child","B. children","C. childs","D. childrens"], answer:1},
+      {q:"I like your jeans. __________ new?", opts:["A. Are your","B. Is it","C. Is they","D. Are they"], answer:0},
+      {q:"I'd like __________ apples, please.", opts:["A. an","B. some","C. that","D. this"], answer:1},
+      {q:"Could you give me __________ about courses?", opts:["A. an advice","B. some advices","C. some advice","D. advices"], answer:2},
+      {q:"Can I have __________, please?", opts:["A. two toasts","B. two slice of toast","C. two slices of toast","D. two pieces of toasts"], answer:2},
+      {q:"Do you read __________ newspaper every day?", opts:["A. one","B. a","C. an","D. the"], answer:2},
+      {q:"Our children like riding so we keep __________", opts:["A. an horse","B. horse","C. a horses","D. horses"], answer:3},
+      {q:"Don't look at __________ . It can hurt your eyes.", opts:["A. a sun","B. sun","C. the sun","D. suns"], answer:2},
+      {q:"'You've got a lot of books.' 'Oh, __________ all belong to my husband.'", opts:["A. the books","B. books","C. a book","D. an book"], answer:1},
+      {q:"Marcia started to play __________ when she was fifteen.", opts:["A. a tennis","B. the tennis","C. tennis","D. an tennis"], answer:2},
+      {q:"We haven't got __________ milk left.", opts:["A. some","B. any","C. a","D. many"], answer:1},
+      {q:"'How __________ the bus ticket to the town centre?'", opts:["A. much is","B. many is","C. much are","D. many are"], answer:0},
+      {q:"What's her job? ~ She's __________ lecturer.", opts:["A. an university","B. a university","C. one university","D. university"], answer:0},
+      {q:"Are you a vegetarian? ~ Yes, I never eat __________.", opts:["A. meat","B. the meat","C. some meat","D. a meat"], answer:0},
+      {q:"Her eyes are blue and her __________ dark.", opts:["A. hair are","B. hair is","C. hairs are","D. hairs is"], answer:1},
+      {q:"We don't need to buy __________ milk.", opts:["A. a","B. some","C. any","D. no"], answer:2},
+      {q:"How many cinemas __________ near here?", opts:["A. are they","B. is there","C. are there","D. is it"], answer:2},
+      {q:"I have ___ meeting at 9 a.m.", opts:["A. a","B. an","C. the","D. some"], answer:0},
+      {q:"She is ___ engineer in my team.", opts:["A. a","B. an","C. the","D. any"], answer:1},
+      {q:"Can I have ___ information about the course?", opts:["A. a","B. an","C. some","D. many"], answer:2}
+    ]
+  },
+  {
+    id: "II. Adjectives",
+    questions: [
+      {q:"We thought the film was _______.", opts:["A. very bored","B. much boring","C. very boring","D. much bored"], answer:2},
+      {q:"In the photo Tom looks _______ his friends.", opts:["A. happier that","B. happier than","C. more happy than","D. more happy"], answer:1},
+      {q:"Paris is _______ London.", opts:["A. small as","B. as smaller as","C. smaller that","D. smaller than"], answer:3},
+      {q:"The way she said that made me _______.", opts:["A. extreme angrily","B. angrily extreme","C. extremely angry","D. angry extremely"], answer:2},
+      {q:"I'm reading __________ at the moment.", opts:["A. a book interesting","B. an interesting book","C. a book is interesting","D. interesting a book"], answer:1},
+      {q:"The ice cream _________.", opts:["A. tastes delicious","B. delicious tastes","C. delicious","D. tastes deliciously"], answer:0},
+      {q:"I never watch TV. I think it _________.", opts:["A. boring is","B. is boring","C. is bored","D. is bore"], answer:1},
+      {q:"John's very ________ because it's his birthday tomorrow.", opts:["A. excited","B. exciting","C. excitement","D. excite"], answer:0},
+      {q:"The weather is usually ________ in London than in Edinburgh.", opts:["A. dryer","B. drier","C. dryly","D. more drier"], answer:1},
+      {q:"Carlo's watch was _______ than Silvia's.", opts:["A. expensiver","B. more expensive","C. expensive more","D. most expensive than"], answer:1},
+      {q:"I think beach holidays are _______ than skiing holidays.", opts:["A. better","B. good","C. more good","D. more better"], answer:0},
+      {q:"Mr Davidson is the ________ person in our street.", opts:["A. more friendly","B. friendliest","C. friendlyest","D. most friendliest"], answer:1},
+      {q:"Who is ________ footballer in your team?", opts:["A. the most good","B. the better","C. the best","D. best"], answer:2},
+      {q:"This exercise is more difficult ________ the last one.", opts:["A. like","B. as","C. than","D. to"], answer:2},
+      {q:"Jeans are ________ than suits.", opts:["A. much expensive","B. expensively","C. expensive","D. less expensive"], answer:3},
+      {q:"Terry can't vote yet. He's fifteen so he's ________.", opts:["A. young enough","B. young too","C. too young","D. enough young"], answer:2},
+      {q:"I don't like swimming in the sea. The water isn't ________.", opts:["A. warm enough","B. too warm","C. enough warm","D. very enough warm"], answer:0},
+      {q:"I loved that film; it was ________ exciting.", opts:["A. a bit","B. a lot","C. really","D. very much"], answer:0},
+      {q:"I like ________ !", opts:["A. very much chocolate","B. chocolate very much","C. very chocolate much","D. much chocolate very"], answer:1},
+      {q:"This detailed map is ______ the atlas.", opts:["A. more useful as","B. more useful than","C. usefuller as","D. usefuller than"], answer:1}
+    ]
+  },
+  {
+    id: "III. Tenses",
+    questions: [
+      {q:"My friend __________ American.", opts:["A. not is","B. are not","C. isn't","D. doesn't is"], answer:2},
+      {q:"The women in my family __________ very tall.", opts:["A. have","B. are","C. am","D. is"], answer:1},
+      {q:"________ hungry?", opts:["A. Have you","B. Are you","C. Do you have","D. You are?"], answer:1},
+      {q:"Maria ________ the answer to that question.", opts:["A. know","B. knows","C. is know","D. does knows"], answer:1},
+      {q:"Jane is a nurse; she ________ in a hospital.", opts:["A. works","B. work","C. working","D. is works"], answer:0},
+      {q:"Laptop computers ________ batteries.", opts:["A. are using","B. uses","C. use","D. used"], answer:2},
+      {q:"My uncle ________ near here.", opts:["A. not lives","B. doesn't lives","C. doesn't live","D. don't live"], answer:2},
+      {q:"________ coffee in the mornings?", opts:["A. Do you drink","B. Does you drinks","C. Drink you","D. Are you drink"], answer:0},
+      {q:"I ________ a big breakfast.", opts:["A. am having always","B. always have","C. have always","D. usually am having"], answer:1},
+      {q:"I'm afraid the baby ________ very well.", opts:["A. isn't sleeping","B. not sleeps","C. is sleeping not","D. doesn't sleeping"], answer:0},
+      {q:"My mobile isn't working so I ________ my sister's phone.", opts:["A. using","B. 'm using","C. use","D. am use"], answer:1},
+      {q:"What __________ right now?", opts:["A. do you do","B. are doing you","C. are you doing","D. you are doing"], answer:2},
+      {q:"Carol usually ________ to work but this week she is taking the bus.", opts:["A. is driving","B. drives","C. isn't driving","D. does drive usually"], answer:1},
+      {q:"You are wrong. I ________ with you.", opts:["A. don't agree","B. 'm not agreeing","C. 'm not agree","D. doesn't agree"], answer:0},
+      {q:"My parents ________ a car.", opts:["A. don't have","B. do have not","C. have not","D. hasn't"], answer:0},
+      {q:"Isabel ________ dark hair and brown eyes.", opts:["A. is","B. has","C. is having","D. have"], answer:1},
+      {q:"George Washington ________ the first president of the USA.", opts:["A. was","B. were","C. be","D. is"], answer:0},
+      {q:"________ your grandparents Polish?", opts:["A. Was","B. Did","C. Were","D. Are"], answer:2},
+      {q:"The children ________ at school yesterday.", opts:["A. wasn't","B. weren't","C. didn't be","D. was"], answer:1},
+      {q:"My watch ________ working yesterday; it needs a new battery.", opts:["A. stoped","B. stop","C. stopped","D. was stop"], answer:2},
+      {q:"I ________ my little sister to the zoo last Saturday.", opts:["A. take","B. took","C. taked","D. have taken"], answer:1},
+      {q:"My sister started her first job ________.", opts:["A. has two months","B. two months ago","C. ago two months","D. for two months"], answer:1},
+      {q:"The letter isn't here because the post ________ this morning.", opts:["A. didn't arrived","B. didn't arrives","C. didn't arrive","D. not arrived"], answer:2},
+      {q:"________ to Rebecca's party last night?", opts:["A. Did you go","B. Went you","C. Did you went","D. Do you go"], answer:0},
+      {q:"We ________ dinner at eight o'clock last night.", opts:["A. were eating","B. was eating","C. did eating","D. ate"], answer:3},
+      {q:"I ________ living there in October.", opts:["A. weren't","B. didn't","C. wasn't","D. weren't I"], answer:2},
+      {q:"When we got there, it was cold but it ________.", opts:["A. wasn't raining","B. not rain","C. rained","D. wasn't rain"], answer:0},
+      {q:"The children were having breakfast when the postman ________.", opts:["A. did arrive","B. was arriving","C. arrived","D. arrives"], answer:2},
+      {q:"Jeremy ________ his car to the garage six times last year.", opts:["A. took","B. taking","C. was taking","D. has taken"], answer:0},
+      {q:"We ran to the station and ________ the first train we saw.", opts:["A. were getting on","B. got on","C. was getting on","D. getting on"], answer:1},
+      {q:"I got a text message while I ________ for the bus.", opts:["A. was waiting","B. waited","C. were waiting","D. am waiting"], answer:0},
+      {q:"When I was a child I ________ stay up late.", opts:["A. didn't used to","B. used to not","C. didn't use to","D. didn't use too"], answer:2},
+      {q:"My best friend ________ to a fantastic concert last Saturday.", opts:["A. was going","B. used to go","C. went","D. has gone"], answer:2},
+      {q:"They ________ by sea several times this year.", opts:["A. travelled","B. have travelled","C. is travelled","D. are travelling"], answer:1},
+      {q:"Have you ________ the British Museum in London?", opts:["A. ever visited","B. ever visit","C. never visit","D. visited ever"], answer:0},
+      {q:"That's the biggest cat I ________!", opts:["A. see","B. have ever seen","C. saw","D. had ever seen"], answer:1},
+      {q:"Carl says he's never ________ Indian food.", opts:["A. ate","B. eats","C. eaten","D. has eaten"], answer:2},
+      {q:"Louisa has ________ to the shops. She isn't back yet.", opts:["A. gone","B. been","C. went","D. has been"], answer:0},
+      {q:"'Is Mary here?' 'No, she ________.'", opts:["A. hasn't arrived yet","B. yet hasn't arrived","C. has arrived yet","D. didn't arrive yet"], answer:0},
+      {q:"Oliver hasn't seen his daughter ________.", opts:["A. since two years","B. two years ago","C. for two years","D. since two years ago"], answer:2},
+      {q:"Are you ________ her a present?", opts:["A. going buy","B. going to buy","C. going to buying","D. go to buy"], answer:1},
+      {q:"The children ________ come with us this year.", opts:["A. going not","B. aren't going","C. aren't going to","D. won't"], answer:1},
+      {q:"When I grow up I ________ an artist.", opts:["A. will being","B. am","C. 'm going to be","D. will be"], answer:3},
+      {q:"The floor is very wet. He ________.", opts:["A. falls over","B. 's going to fall over","C. is falling over","D. will falls"], answer:1},
+      {q:"The train is delayed so I ________ late for work.", opts:["A. 'm going to be","B. 'm being","C. can be","D. will be"], answer:0},
+      {q:"There's no moon so it ________ very dark tonight.", opts:["A. 'm going to be","B. will being","C. 's going to be","D. will be"], answer:2},
+      {q:"My father ________ fifty next Wednesday.", opts:["A. is being","B. will to be","C. will be","D. is be"], answer:2},
+      {q:"I'm not hungry. I ________ have any lunch today.", opts:["A. think I not will","B. don't think I'll","C. don't think to","D. think I won't"], answer:1},
+      {q:"'It's very cold in here.' 'OK, I ________ the heating.'", opts:["A. 'm going to turn on","B. 'll turn on","C. will turning on","D. turn on"], answer:1},
+      {q:"Don't touch the cooker. You ________ yourself.", opts:["A. 'll burn","B. are going to","C. burn","D. are burning"], answer:0}
+    ]
+  },
+  {
+    id: "IV. Conditional sentences",
+    questions: [
+      {q:"If you ______ the key, the car starts.", opts:["A. turned","B. turn","C. will turn","D. are turning"], answer:1},
+      {q:"If people eat too much, they ______ fat.", opts:["A. get","B. got","C. are getting","D. will get"], answer:0},
+      {q:"Phone this emergency number ______ your car breaks down.", opts:["A. if","B. when","C. for when","D. unless"], answer:1},
+      {q:"If it isn't sunny, we ______ to the beach.", opts:["A. went","B. didn't go","C. won't go","D. aren't going"], answer:2},
+      {q:"If you take me to the shops, I ______ some food for supper.", opts:["A. 'll buy","B. buy","C. bought","D. am buying"], answer:0},
+      {q:"If the hotel receptionist ______ us a better room, we'll give her some money.", opts:["A. gave","B. will give","C. gives","D. is giving"], answer:2},
+      {q:"If you make lunch, I ______ the dishes.", opts:["A. 'll do","B. do","C. don't do","D. am doing"], answer:0},
+      {q:"If the restaurant is really expensive, we ______ there.", opts:["A. didn't eat","B. ate","C. won't eat","D. don't eat"], answer:2},
+      {q:"If we had a garden, we ______ a pet.", opts:["A. got","B. 'd get","C. will get","D. get"], answer:1},
+      {q:"If I ______ a million dollars, I'd spend the money on a fast car.", opts:["A. have","B. will have","C. had","D. would have"], answer:2},
+      {q:"If you went to the concert, you ______ it.", opts:["A. would enjoy","B. had enjoyed","C. will enjoy","D. enjoy"], answer:0},
+      {q:"Marianne ______ with us today if she wasn't at her sister's wedding.", opts:["A. would be","B. was","C. is","D. will be"], answer:0},
+      {q:"If it ______ so cold, we'd go for a swim.", opts:["A. isn't","B. won't be","C. wasn't","D. isn't being"], answer:2},
+      {q:"If ______, I'd see a doctor as soon as possible.", opts:["A. I were you","B. I was me","C. you were me","D. I am you"], answer:0},
+      {q:"______ buy the tickets online if I were you; they're much cheaper.", opts:["A. You will","B. I will","C. I'd","D. I shall"], answer:2},
+      {q:"Tomorrow we can go for a picnic if the weather ______ fine.", opts:["A. is being","B. will be","C. would be","D. is"], answer:3},
+      {q:"If I ______ you, I'd go to the police.", opts:["A. would be","B. should be","C. were","D. am"], answer:2},
+      {q:"If ______ my passport, I'll be in trouble.", opts:["A. I lose","B. I'll lose","C. I lost","D. I would lose"], answer:0},
+      {q:"If the bus to the airport hadn't been so late, we ______ the plane.", opts:["A. caught","B. had caught","C. would catch","D. would have caught"], answer:3},
+      {q:"I haven't got a ticket. If ______ one, I could get in.", opts:["A. I'd have","B. I had","C. I have","D. I've got"], answer:1}
+    ]
+  }
+];
+
+// app state
+let currentSectionIndex = 0;
+let sectionOrder = [...Array(sections.length).keys()]; // keep order of sections fixed
+let currentQuestions = [];
+let qIndex = 0;
+let score = 0;
+let attempts = 0;
+let mistakes = 0;
+let totalInSection = 0;
+let audioEnabled = true;
+
+// prepare tiny beep sounds (synth) to avoid external files
+function makeBeep(type){
+  // We'll use WebAudio API to play simple tones
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type==="correct" ? "sine" : "square";
+    o.frequency.value = type==="correct" ? 880 : 220;
+    g.gain.value = 0.05;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); ctx.close(); }, 150);
+  }catch(e){}
+}
+
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+}
+
+function startSection(index){
+  currentSectionIndex = index;
+  const sec = sections[sectionOrder[index]];
+  document.getElementById('sectionName').innerText = sec.id;
+  // clone questions and shuffle them
+  currentQuestions = sec.questions.map(q=>({...q})); // shallow copy
+  shuffleArray(currentQuestions);
+  totalInSection = currentQuestions.length;
+  qIndex = 0;
+  score = 0; attempts = 0; mistakes = 0;
+  document.getElementById('retrySection').classList.add('hidden');
+  showQuestion();
+  updateProgress();
+}
+
+function showQuestion(){
+  const qArea = document.getElementById('qText');
+  const answersDiv = document.getElementById('answers');
+  const qObj = currentQuestions[qIndex];
+  qArea.innerText = (qIndex+1) + ". " + qObj.q;
+  // prepare shuffled options with mapping to original answer index
+  let opts = qObj.opts.map((t,i)=>({text:t,orig:i}));
+  shuffleArray(opts);
+  answersDiv.innerHTML = '';
+  opts.forEach((o,idx)=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerText = o.text;
+    btn.dataset.origIndex = o.orig;
+    btn.onclick = ()=> handleAnswer(btn, qObj.answer);
+    answersDiv.appendChild(btn);
+  });
+  document.getElementById('nextBtn').classList.add('hidden');
+  updateStats();
+}
+
+function handleAnswer(btn, correctIndex){
+  // disable other buttons
+  const parent = btn.parentElement;
+  const buttons = parent.querySelectorAll('button.opt');
+  buttons.forEach(b=>b.disabled=true);
+  const chosenOrig = parseInt(btn.dataset.origIndex);
+  attempts++;
+  if(chosenOrig === correctIndex){
+    score++;
+    btn.classList.add('correct');
+    if(audioEnabled) makeBeep('correct');
+    document.getElementById('nextBtn').classList.remove('hidden');
+    // when correct, allow next
+  } else {
+    mistakes++;
+    btn.classList.add('wrong');
+    if(audioEnabled) makeBeep('wrong');
+    // allow retry: enable other incorrect? we enable buttons for retry except this one
+    buttons.forEach(b=> b.disabled=false);
+    btn.disabled = true; // don't allow same wrong choice again
+    // show skip button still available
+  }
+  updateStats();
+  updateProgress();
+}
+
+function updateProgress(){
+  const bar = document.getElementById('bar');
+  const pct = Math.round(((qIndex)/totalInSection)*100);
+  bar.style.width = pct + '%';
+}
+
+function updateStats(){
+  document.getElementById('stats').innerText =
+    `Câu ${qIndex+1}/${totalInSection} — Điểm: ${score} — Lần chọn: ${attempts} — Sai: ${mistakes}`;
+}
+
+document.getElementById('skipBtn').addEventListener('click', ()=>{
+  // move to next question without changing score
+  nextQuestion();
+});
+
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  nextQuestion();
+});
+
+document.getElementById('retrySection').addEventListener('click', ()=>{
+  startSection(currentSectionIndex);
+});
+
+function nextQuestion(){
+  qIndex++;
+  if(qIndex < totalInSection){
+    showQuestion();
+  } else {
+    // section finished
+    document.getElementById('qText').innerText = `Kết thúc phần: ${sections[sectionOrder[currentSectionIndex]].id}`;
+    document.getElementById('answers').innerHTML = `<div class="small">Bạn được ${score} trên ${totalInSection} câu. Sai ${mistakes} lần. Bạn có thể làm lại phần hoặc sang phần tiếp theo.</div>`;
+    document.getElementById('nextBtn').classList.add('hidden');
+    document.getElementById('retrySection').classList.remove('hidden');
+    // move to next section button (create dynamically)
+    const controls = document.querySelector('.controls');
+    // remove old next-if-any button
+    let nextSecBtn = document.getElementById('nextSectionBtn');
+    if(nextSecBtn) nextSecBtn.remove();
+    if(currentSectionIndex < sections.length - 1){
+      const btn = document.createElement('button');
+      btn.id = 'nextSectionBtn';
+      btn.innerText = 'Sang phần tiếp theo';
+      btn.onclick = ()=>{
+        startSection(currentSectionIndex+1);
+      };
+      controls.appendChild(btn);
+    } else {
+      const done = document.createElement('div');
+      done.className = 'small';
+      done.innerText = 'Bạn đã hoàn thành tất cả các phần.';
+      controls.appendChild(done);
+    }
+    // final progress bar full
+    document.getElementById('bar').style.width = '100%';
+  }
+}
+
+// initialize: start from section 0
+// audio setting from user choice embedded server-side; default true
+audioEnabled = true;
+startSection(0);
+
+// Allow toggling audio by clicking footer (simple)
+document.querySelector('footer').addEventListener('click', ()=>{
+  audioEnabled = !audioEnabled;
+  document.querySelector('footer').innerText = 'File tạo tự động — mở file này offline để luyện. (Âm thanh: ' + (audioEnabled? 'bật':'tắt') + ')';
+});
+
+</script>
+</body>
+</html>
